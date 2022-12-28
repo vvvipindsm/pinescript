@@ -1,0 +1,1 @@
+alert(content, alert.freq_once_per_bar) 
