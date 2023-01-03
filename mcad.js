@@ -1,26 +1,35 @@
 //@version=5
-indicator(title="Moving Average Convergence Divergence", shorttitle="MACD", timeframe="", timeframe_gaps=true)
-// Getting inputs
-fast_length = input(title="Fast Length", defval=12)
-slow_length = input(title="Slow Length", defval=26)
-src = input(title="Source", defval=close)
-signal_length = input.int(title="Signal Smoothing",  minval = 1, maxval = 50, defval = 9)
-sma_source = input.string(title="Oscillator MA Type",  defval="EMA", options=["SMA", "EMA"])
-sma_signal = input.string(title="Signal Line MA Type", defval="EMA", options=["SMA", "EMA"])
-// Plot colors
-col_macd = input(#2962FF, "MACD Line  ", group="Color Settings", inline="MACD")
-col_signal = input(#FF6D00, "Signal Line  ", group="Color Settings", inline="Signal")
-col_grow_above = input(#26A69A, "Above   Grow", group="Histogram", inline="Above")
-col_fall_above = input(#B2DFDB, "Fall", group="Histogram", inline="Above")
-col_grow_below = input(#FFCDD2, "Below Grow", group="Histogram", inline="Below")
-col_fall_below = input(#FF5252, "Fall", group="Histogram", inline="Below")
-// Calculating
-fast_ma = sma_source == "SMA" ? ta.sma(src, fast_length) : ta.ema(src, fast_length)
-slow_ma = sma_source == "SMA" ? ta.sma(src, slow_length) : ta.ema(src, slow_length)
+strategy("My Macd", overlay=true)
+fastLength = input(12)
+var x = 1
+var score = ""
+var status = 0
+var dir = "BUY"
+slowlength = input(26)
+MACDLength = input(9)
+MACD = ta.ema(close, fastLength) - ta.ema(close, slowlength)
+aMACD = ta.ema(MACD, MACDLength)
+delta = MACD - aMACD
+nse = request.security(syminfo.tickerid, '1D',close)
+fast_length = 12
+slow_length = 26
+signal_length = 9
+
+fast_ma = ta.ema(nse, fast_length) 
+slow_ma = ta.ema(nse,slow_length) 
 macd = fast_ma - slow_ma
-signal = sma_signal == "SMA" ? ta.sma(macd, signal_length) : ta.ema(macd, signal_length)
+signal = ta.ema(macd, signal_length)
+
 hist = macd - signal
-hline(0, "Zero Line", color=color.new(#787B86, 50))
-plot(hist, title="Histogram", style=plot.style_columns, color=(hist>=0 ? (hist[1] < hist ? col_grow_above : col_fall_above) : (hist[1] < hist ? col_grow_below : col_fall_below)))
-plot(macd, title="MACD", color=col_macd)
-plot(signal, title="Signal", color=col_signal)
+plot(hist, title="Histogram", style=plot.style_columns, color=(hist>=0 ? (hist[1] < hist ? color.green : color.green) : color.red))
+plot(macd, color = #2962FF)
+plot(signal,color=#FF6D00)
+score := hist>=0 ? (hist[1] < hist ? "buy" : "buy"):(hist[1] < hist ? "sale" : "sale")
+
+// label= label.new(bar_index,high,text= str.tostring(close),color=color.white,textcolor= color.green,style =  label.style_none,yloc = yloc.abovebar)
+
+if (ta.crossover(delta, .8))
+    alert("BUY " + str.tostring(syminfo.tickerid)+" "+str.tostring(close), alert.freq_once_per_bar)
+
+if (ta.crossunder(delta,.3) and score =="sell")
+    alert("SELL "+str.tostring(syminfo.tickerid)+" "+str.tostring(close), alert.freq_once_per_bar) 
