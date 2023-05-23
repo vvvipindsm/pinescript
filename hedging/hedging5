@@ -1,0 +1,50 @@
+//@version=5
+strategy("Hedging with Trailing Stop Loss", overlay=true)
+
+// Input parameters
+var float takeProfitPct = input(1.0, title="Take Profit %")
+var float stopLossPct = input(1.0, title="Stop Loss %")
+var float trailingStopPct = input(0.5, title="Trailing Stop %")
+
+// Calculate stop loss and take profit levels
+var float stopLossLevel = close * (1 - stopLossPct / 100)
+var float takeProfitLevel = close * (1 + takeProfitPct / 100)
+
+// Initialize variables
+var bool hedge = false
+var float hedgeLevel = na
+
+// Entry condition
+entryCondition = crossover(sma(close, 50), sma(close, 200))
+
+// Exit condition
+exitCondition = close <= stopLossLevel or close >= takeProfitLevel
+
+if entryCondition
+    // Open long position
+    strategy.entry("Long", strategy.long)
+
+    // Calculate hedge level
+    hedgeLevel := close * (1 - (stopLossPct + trailingStopPct) / 100)
+    hedge := true
+
+if hedge and close <= hedgeLevel
+    // Close long position
+    strategy.close("Long")
+
+    // Open hedge (short) position
+    strategy.entry("Short", strategy.short)
+
+    // Update hedge level
+    hedgeLevel := close * (1 + (stopLossPct + trailingStopPct) / 100)
+
+// Trailing stop loss for hedge position
+if hedge and close >= hedgeLevel
+    hedgeLevel := close * (1 + trailingStopPct / 100)
+
+if exitCondition
+    // Close long position
+    strategy.close("Long")
+
+    // Close hedge (short) position
+    strategy.close("Short")

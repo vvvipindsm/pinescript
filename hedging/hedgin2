@@ -1,0 +1,51 @@
+//@version=5
+strategy("Hedging with Stop Loss Trailing", overlay=true)
+
+// Input parameters
+var float entryPrice = na
+var float stopLossPrice = na
+var float trailOffset = na
+var float hedgeSize = na
+
+// Calculate stop-loss price
+var float trailingStopPrice = na
+if not na(stopLossPrice)
+    trailingStopPrice := max(trailingStopPrice, stopLossPrice)
+
+// Calculate hedge positions
+var bool isHedged = false
+var float hedgeAmount = na
+if strategy.position_size > 0
+    isHedged := false
+    hedgeAmount := na
+else if strategy.position_size < 0
+    isHedged := true
+    hedgeAmount := abs(strategy.position_size)
+
+// Calculate trailing stop levels
+var float stopLevel = na
+if not na(entryPrice)
+    stopLevel := entryPrice - trailOffset
+
+// Entry conditions
+entryCondition = close > stopLevel
+
+// Exit conditions
+exitCondition = close < trailingStopPrice
+
+// Place orders
+if entryCondition and not isHedged
+    strategy.entry("Long", strategy.long)
+    entryPrice := close
+    stopLossPrice := close - trailOffset
+
+if exitCondition and not isHedged
+    strategy.exit("Exit Long", "Long", stop=trailingStopPrice)
+
+if entryCondition and isHedged
+    strategy.entry("Hedge", strategy.short, qty=hedgeSize)
+    entryPrice := close
+    stopLossPrice := close + trailOffset
+
+if exitCondition and isHedged
+    strategy.exit("Exit Hedge", "Hedge", stop=trailingStopPrice, qty=hedgeAmount)

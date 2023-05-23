@@ -1,0 +1,52 @@
+//@version=4
+strategy("Hedging with Stop Loss Trailing", overlay=true)
+
+// Input parameters
+var float takeProfitPips = input(20, title="Take Profit (in pips)")
+var float stopLossPips = input(10, title="Initial Stop Loss (in pips)")
+var float trailingStopPips = input(5, title="Trailing Stop (in pips)")
+var float hedgeRatio = input(0.5, title="Hedge Ratio (0.0 - 1.0)")
+
+// Calculate stop loss and take profit levels
+var float stopLossLevel = na
+var float takeProfitLevel = na
+
+if strategy.position_size > 0
+    stopLossLevel := strategy.position_avg_price - (stopLossPips * syminfo.mintick)
+    takeProfitLevel := strategy.position_avg_price + (takeProfitPips * syminfo.mintick)
+
+// Calculate trailing stop level
+var float trailingStopLevel = na
+
+if strategy.position_size > 0
+    if close > strategy.position_avg_price
+        trailingStopLevel := max(strategy.position_avg_price + (trailingStopPips * syminfo.mintick), trailingStopLevel[1])
+    else
+        trailingStopLevel := strategy.position_avg_price - (stopLossPips * syminfo.mintick)
+
+// Check if a new position should be opened
+var bool enterLong = false
+var bool enterShort = false
+
+if strategy.position_size == 0
+    if close > high[1]
+        enterLong := true
+    else if close < low[1]
+        enterShort := true
+
+// Execute trades
+if enterLong
+    strategy.entry("Long", strategy.long)
+    strategy.entry("Short Hedge", strategy.short, qty=strategy.position_size * hedgeRatio)
+
+if enterShort
+    strategy.entry("Short", strategy.short)
+    strategy.entry("Long Hedge", strategy.long, qty=strategy.position_size * hedgeRatio)
+
+// Set stop loss and take profit levels
+strategy.exit("Exit Long", "Long", stop=stopLossLevel, limit=takeProfitLevel)
+strategy.exit("Exit Short", "Short", stop=stopLossLevel, limit=takeProfitLevel)
+
+// Trailing stop loss
+strategy.exit("Trailing Stop", "Long", trail_points=trailingStopLevel / syminfo.mintick)
+strategy.exit("Trailing Stop", "Short", trail_points=trailingStopLevel / syminfo.mintick)

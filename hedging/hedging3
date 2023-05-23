@@ -1,0 +1,44 @@
+//@version=5
+strategy("Hedging with Stop Loss Trailing", overlay=true)
+
+// Define strategy parameters
+takeProfitPercent = input(1.0, title="Take Profit %")
+stopLossPercent = input(0.5, title="Stop Loss %")
+trailStopPercent = input(0.3, title="Trailing Stop %")
+hedgingEnabled = input(true, title="Enable Hedging")
+
+// Calculate entry conditions
+entryCondition = crossover(sma(close, 10), sma(close, 20))
+
+// Calculate initial stop loss and take profit levels
+stopLossLevel = close * (1 - stopLossPercent / 100)
+takeProfitLevel = close * (1 + takeProfitPercent / 100)
+
+// Calculate trailing stop levels
+trailingStopLevel = close * (1 - trailStopPercent / 100)
+
+// Track current position
+var float position = na
+
+// Enter long position
+if entryCondition
+    if not na(position) and position < 0 and hedgingEnabled
+        strategy.close("Short")
+    position := 1
+    strategy.entry("Long", strategy.long)
+
+// Enter short position
+if entryCondition
+    if not na(position) and position > 0 and hedgingEnabled
+        strategy.close("Long")
+    position := -1
+    strategy.entry("Short", strategy.short)
+
+// Exit position based on take profit or trailing stop
+if not na(position)
+    if position == 1
+        strategy.exit("Long Take Profit", "Long", limit=takeProfitLevel)
+        strategy.exit("Long Trailing Stop", "Long", trail_price=trailingStopLevel, trail_offset=stopLossLevel)
+    else
+        strategy.exit("Short Take Profit", "Short", limit=takeProfitLevel)
+        strategy.exit("Short Trailing Stop", "Short", trail_price=trailingStopLevel, trail_offset=stopLossLevel)

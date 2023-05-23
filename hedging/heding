@@ -1,0 +1,62 @@
+//@version=4
+strategy("Hedging and Stop Loss Trailing", overlay=true)
+
+// Input variables
+var float trailingStopLossPercent = input(1.0, "Trailing Stop Loss (%)")
+var float hedgeRatio = input(0.5, "Hedge Ratio")
+
+// Calculate stop loss values
+var float stopLossValue = na
+var float trailingStopLossValue = na
+if (strategy.position_size > 0)
+    stopLossValue := strategy.position_avg_price * (1 - trailingStopLossPercent / 100)
+    trailingStopLossValue := close * (1 - trailingStopLossPercent / 100)
+
+// Hedging and stop loss trailing conditions
+var bool enterLong = crossover(sma(close, 50), sma(close, 200))
+var bool enterShort = crossunder(sma(close, 50), sma(close, 200))
+var bool exitLong = close < stopLossValue
+var bool exitShort = close > stopLossValue
+
+// Execute trades
+if (enterLong)
+    strategy.entry("Long", strategy.long)
+if (enterShort)
+    strategy.entry("Short", strategy.short)
+
+// Hedge positions
+if (strategy.position_size > 0)
+    strategy.entry("HedgeShort", strategy.short, qty = strategy.position_size * hedgeRatio)
+else if (strategy.position_size < 0)
+    strategy.entry("HedgeLong", strategy.long, qty = strategy.position_size * hedgeRatio)
+
+// Exit positions
+if (exitLong)
+    strategy.close("Long")
+if (exitShort)
+    strategy.close("Short")
+
+// Trailing stop loss
+if (strategy.position_size > 0 and close > trailingStopLossValue)
+    stopLossValue := trailingStopLossValue
+else if (strategy.position_size < 0 and close < trailingStopLossValue)
+    stopLossValue := trailingStopLossValue
+
+// Plotting stop loss levels
+plot(stopLossValue, title="Stop Loss", color=color.red, linewidth=1)
+plot(trailingStopLossValue, title="Trailing Stop Loss", color=color.orange, linewidth=1)
+In this example, the strategy uses a simple moving average crossover as a signal to enter long or short positions. The enterLong condition is triggered when the shorter-term moving average (50) crosses above the longer-term moving average (200), and the enterShort condition is triggered when the shorter-term moving average crosses below the longer-term moving average.
+
+The strategy also incorporates hedging by opening positions in the opposite direction with a quantity determined by the hedgeRatio input variable. For example, if the hedge ratio is set to 0.5, it means the hedge position size will be half of the primary position size.
+
+The stop loss functionality is implemented with a trailing stop loss. When a position is entered, the initial stop loss level is calculated as a percentage of the entry price. If the price moves in favor of the position, the stop loss level is adjusted upwards (trailing) to lock in profits. If the price moves against the position, the stop loss level remains unchanged until it is hit, triggering an exit from the position.
+
+The stop loss and trailing stop loss levels are plotted on the chart for visual reference.
+
+Please note that this is a basic example and may need to be customized further depending on your specific requirements and trading strategy.
+
+
+
+
+
+
