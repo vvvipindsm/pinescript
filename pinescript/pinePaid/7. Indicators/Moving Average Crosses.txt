@@ -1,0 +1,20 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ZenAndTheArtOfTrading / www.PineScriptMastery.com
+// @version=5
+indicator("MA Crosses", overlay=true)
+
+// Get MAs
+ema1 = ta.ema(close, 50)
+ema2 = ta.ema(close, 100)
+
+// Get crosses
+maCrossOver  = ta.crossover(ema1, ema2)
+maCrossUnder = ta.crossunder(ema1, ema2)
+
+// Draw MAs
+plot(ema1, color=color.green)
+plot(ema2, color=color.red)
+
+// Draw crosses
+bgcolor(maCrossOver ? color.green : na)
+bgcolor(maCrossUnder ? color.red : na)

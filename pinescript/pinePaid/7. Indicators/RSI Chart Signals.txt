@@ -1,0 +1,50 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ZenAndTheArtOfTrading / www.PineScriptMastery.com
+// @version=5
+indicator("RSI Chart Signals", overlay=true)
+
+// Import Zen Library
+import ZenAndTheArtOfTrading/ZenLibrary/2 as zen
+
+// Get user input
+lookback    = input.int(title="Lookback", defval=7)
+rsiLen      = input.int(title="RSI Length", defval=7)
+rsiOB       = input.float(title="RSI Overbought", defval=80.0)
+rsiOS       = input.float(title="RSI Oversold", defval=20.0)
+multiplier  = input.float(title="ATR Multiplier", defval=1.0)
+rr          = input.float(title="Risk:Reward", defval=1.0)
+
+// Get RSI value
+rsi = ta.rsi(close, rsiLen)
+rsiSell = rsi > rsiOB
+rsiBuy  = rsi < rsiOS
+
+// Get ATR value
+atr = ta.atr(14)
+
+// Detect candle patterns
+bullEC = zen.isBullishEC()
+bearEC = zen.isBearishEC()
+
+// Detect buy and sell signals
+buySignal  = bullEC and (rsiBuy or rsiBuy[1])
+sellSignal = bearEC and (rsiSell or rsiSell[1])
+
+// Calculate stops & targets
+longStop  = ta.lowest(low, lookback) - (atr * multiplier)
+shortStop = ta.highest(high, lookback) + (atr * multiplier)
+longStopDistance  = close - longStop
+shortStopDistance = shortStop - close
+longTarget  = close + (longStopDistance * rr)
+shortTarget = close - (shortStopDistance * rr)
+
+// Draw data to chart
+plotshape(buySignal, style=shape.triangleup, color=color.green, location=location.belowbar)
+plotshape(sellSignal, style=shape.triangledown, color=color.red, location=location.abovebar)
+plot(buySignal ? longStop : na, color=color.red, style=plot.style_linebr)
+plot(sellSignal ? shortStop : na, color=color.red, style=plot.style_linebr)
+plot(buySignal ? longTarget : na, color=color.green, style=plot.style_linebr)
+plot(sellSignal ? shortTarget : na, color=color.green, style=plot.style_linebr)
+
+// Trigger alerts
+alertcondition(buySignal or sellSignal, title="RSI Signal", message="RSI Exhaustion Setup for {{ticker}} - RSI value = {{plot_0}}")

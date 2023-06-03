@@ -1,0 +1,18 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ZenAndTheArtOfTrading / www.PineScriptMastery.com
+// @version=5
+indicator("ATR Indicator", overlay=true)
+
+// Get user input
+multiplier = input.float(title="ATR Multiplier", defval=1.0)
+
+// Get ATR value
+atr = ta.atr(14)
+
+// Calculate trailing stops
+longStop  = low - (atr * multiplier)
+shortStop = high + (atr * multiplier)
+
+// Draw stops to chart
+plot(longStop, color=color.green)
+plot(shortStop, color=color.red)

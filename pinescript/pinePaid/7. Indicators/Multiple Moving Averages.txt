@@ -1,0 +1,51 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ZenAndTheArtOfTrading / www.PineScriptMastery.com
+// @version=5
+indicator("MMA", overlay=true)
+
+// Get MA Lengths
+var g_length = "MA Length"
+maLength1    = input.int(title="MA Length #1", defval=50, minval=1, step=10, group=g_length)
+maLength2    = input.int(title="MA Length #2", defval=100, minval=0, step=10, group=g_length)
+maLength3    = input.int(title="MA Length #3", defval=200, minval=0, step=10, group=g_length)
+maLength4    = input.int(title="MA Length #4", defval=0, minval=0, step=10, group=g_length)
+maLength5    = input.int(title="MA Length #5", defval=0, minval=0, step=10, group=g_length)
+// Get MA Types
+var g_type   = "MA Type"
+maType1      = input.string(title="MA Type #1", defval="EMA", options=["EMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP"], group=g_type)
+maType2      = input.string(title="MA Type #2", defval="EMA", options=["EMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP"], group=g_type)
+maType3      = input.string(title="MA Type #3", defval="EMA", options=["EMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP"], group=g_type)
+maType4      = input.string(title="MA Type #4", defval="EMA", options=["EMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP"], group=g_type)
+maType5      = input.string(title="MA Type #5", defval="EMA", options=["EMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP"], group=g_type)
+allMaType    = input.string(title="ALL MA TYPE", defval="Disabled", options=["Disabled", "EMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP"], group=g_type)
+
+// Get selected Moving Average
+getMA(_maType, _maLength) =>
+    if _maLength == 0
+        na
+    else
+        switch allMaType == "Disabled" ? _maType : allMaType
+            "SMA" => ta.sma(close, _maLength)
+            "HMA" => ta.hma(close, _maLength)
+            "WMA" => ta.wma(close, _maLength)
+            "VWMA" => ta.vwma(close, _maLength)
+            "VWAP" => ta.vwap
+            "DEMA" =>
+                e1 = ta.ema(close, _maLength)
+                e2 = ta.ema(e1, _maLength)
+                2 * e1 - e2
+            => ta.ema(close, _maLength)
+
+// Get MAs
+ma1 = getMA(maType1, maLength1)
+ma2 = getMA(maType2, maLength2)
+ma3 = getMA(maType3, maLength3)
+ma4 = getMA(maType4, maLength4)
+ma5 = getMA(maType5, maLength5)
+
+// Draw MAs
+plot(ma1, color=close >= ma1 ? color.green : color.red, linewidth=1, title="MA #1")
+plot(maLength2 == 0 ? na : ma2, color=#1d75bc, linewidth=2, title="MA #2")
+plot(maLength3 == 0 ? na : ma3, color=#175a91, linewidth=3, title="MA #3")
+plot(maLength4 == 0 ? na : ma4, color=#124773, linewidth=4, title="MA #4")
+plot(maLength5 == 0 ? na : ma5, color=#072d4c, linewidth=5, title="MA #5")

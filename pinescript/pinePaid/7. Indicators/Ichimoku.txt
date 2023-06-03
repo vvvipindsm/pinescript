@@ -1,0 +1,53 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ZenAndTheArtOfTrading / www.PineScriptMastery.com
+// @version=5
+indicator(title="Ichimoku Cloud", overlay=true)
+
+// Import zen library
+import ZenAndTheArtOfTrading/ZenLibrary/2 as zen
+
+// Get user input
+conversionPeriods   = input.int(title="Conversion Line Length", defval=9, minval=1)
+basePeriods         = input.int(title="Base Line Length", defval=26, minval=1)
+laggingSpan2Periods = input.int(title="Leading Span B Length", defval=52, minval=1)
+displacement        = input.int(title="Displacement", defval=26, minval=1)
+displayFullCloud    = input.bool(title="Show Full Cloud?", defval=true)
+
+// Calculate ichy math
+donchian(len) => math.avg(ta.lowest(len), ta.highest(len))
+conversionLine = donchian(conversionPeriods)
+baseLine = donchian(basePeriods)
+leadLine1 = math.avg(conversionLine, baseLine)
+leadLine2 = donchian(laggingSpan2Periods)
+
+// Get candle patterns
+hammer = zen.isHammer()
+star   = zen.isStar()
+
+// Get upper & lower ichimoku cloud displacement lines
+leadLineD1 = leadLine1[displacement - 1]
+leadLineD2 = leadLine2[displacement - 1]
+
+// Check which cloud line is the upper and which is the lower
+upperIchy = leadLineD1 > leadLineD2 ? leadLineD1 : leadLineD2
+lowerIchy = leadLineD1 < leadLineD2 ? leadLineD1 : leadLineD2
+
+// Get ichy filter
+aboveIchy = close > upperIchy
+belowIchy = close < lowerIchy
+
+// Get trade setups
+longSignal  = aboveIchy and hammer
+shortSignal = belowIchy and star
+
+// Draw signals
+plotshape(longSignal, style=shape.triangleup, location=location.belowbar, color=color.green, title="Long Signal")
+plotshape(shortSignal, style=shape.triangledown, location=location.abovebar, color=color.red, title="Short Signal")
+
+// Draw ichy
+plot(displayFullCloud ? conversionLine : na, color=#2962FF, title="Conversion Line")
+plot(displayFullCloud ? baseLine : na, color=#B71C1C, title="Base Line")
+plot(displayFullCloud ? close : na, offset=-displacement + 1, color=#43A047, title="Lagging Span")
+p1 = plot(leadLine1, offset=displacement - 1, color=#A5D6A7, title="Leading Span A")
+p2 = plot(leadLine2, offset=displacement - 1, color=#EF9A9A, title="Leading Span B")
+fill(p1, p2, color=leadLine1 > leadLine2 ? color.rgb(67, 160, 71, 90) : color.rgb(244, 67, 54, 90))

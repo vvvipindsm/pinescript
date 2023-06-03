@@ -1,0 +1,24 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ZenAndTheArtOfTrading / www.PineScriptMastery.com
+// @version=5
+indicator("Volume (RVOL)")
+
+// Get user input
+maLength = input.int(title="MA Length", defval=100)
+rvolTrigger = input.float(title="RVOL Trigger", defval=2.5)
+
+// Get volume data 
+ma = ta.sma(volume, maLength)
+rvol = volume / ma
+
+// Generate RVOL signal
+rvolAlert = rvol >= rvolTrigger
+volColor = rvolAlert ? color.aqua : close > open ? color.green : color.red
+
+// Draw data to chart
+plot(volume, title="Volume", style=plot.style_columns, color=volColor)
+plot(ma, title="MA", color=color.black)
+plot(ma * rvolTrigger, title="RVOL Threshold", color=color.blue)
+
+// Trigger alerts
+alertcondition(rvolAlert, title="RVOL Alert!", message="RVOL Alert For {{ticker}}")
